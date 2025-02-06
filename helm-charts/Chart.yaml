@@ -1,0 +1,8 @@
+name: <<Service-Name>>
+version: 1.0.0
+description: <<Description>>
+keywords:
+  - "<<App-Name>> - <<Service-Name>>"
+home: "https://yomabank.com"
+apiVersion: v1
+appVersion: "1.0.0"

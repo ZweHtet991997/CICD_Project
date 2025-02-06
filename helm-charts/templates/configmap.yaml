@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "service.fullname" . }}
+  labels:
+    {{- include "service.labels" . | nindent 4 }}
+data:
+  application.yml: |-
+    {{- tpl (toYaml .Values.appEnv) . | nindent 4 }}
+
+  log4j2.properties: |-
+    # Define the graylog2 destination
+    name=PropertiesConfig
+    status={{ .Values.logserver.loglevel }}
+    packages=biz.paluch.logging.gelf.log4j2
+    appenders={{ .Values.logserver.appenders }}
+
+    rootLogger.level=info
+
+    {{- if contains "graylog" .Values.logserver.appenders }}
+    appender.graylog.name=GRAYLOG
+    appender.graylog.type=GELF
+    appender.graylog.host=udp:{{ .Values.logserver.host }}
+    appender.graylog.port={{ .Values.logserver.port }}
+    appender.graylog.originHost=%host
+    appender.graylog.facility=logstash-gelf
+
+    appender.graylog.thresholdfield.type=ThresholdFilter
+    appender.graylog.thresholdfield.level={{ .Values.logserver.loglevel }}
+
+    appender.graylog.extractStackTrace=true
+
+    # custom static field with static value
+    appender.graylog.secondfield.type=Field
+    appender.graylog.secondfield.name=namespace
+    appender.graylog.secondfield.literal={{ .Release.Namespace }}
+
+    appender.graylog.thirdfield.type=Field
+    appender.graylog.thirdfield.name=application
+    appender.graylog.thirdfield.literal={{ include "service.fullname" . }}
+
+    appender.graylog.fourthfield.type=Field
+    appender.graylog.fourthfield.name=type
+    appender.graylog.fourthfield.literal={{ .Values.logserver.type }}
+
+    rootLogger.appenderRef.graylog.ref=GRAYLOG
+    {{- end }}
+
+    {{- if contains "console" .Values.logserver.appenders }}
+    # console appender configuration
+    appender.console.type=Console
+    appender.console.name=consoleLogger
+    appender.console.layout.type=PatternLayout
+    appender.console.layout.pattern=%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n
+
+    rootLogger.appenderRef.stdout.ref=consoleLogger
+    {{- end }}
